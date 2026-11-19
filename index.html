@@ -1,0 +1,778 @@
+ 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beam Designer</title>
+  <style>
+    :root {
+      --navy: #18324a;
+      --blue: #3177a8;
+      --blue-dark: #225e89;
+      --green: #35775a;
+      --red: #b04f4f;
+      --amber: #9a6819;
+      --paper: #eef3f6;
+      --card: #ffffff;
+      --line: #dde6ec;
+      --text: #1d2a36;
+      --muted: #6b7c88;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      color: var(--text);
+      background: var(--paper);
+    }
+    header {
+      background:
+        radial-gradient(circle at 82% -30%, rgba(92, 160, 204, 0.28), transparent 38%),
+        linear-gradient(135deg, #17364d, #254f70);
+      color: white;
+      padding: 20px 24px 22px;
+      box-shadow: 0 3px 12px rgba(24, 50, 74, 0.12);
+    }
+    header h1 { margin: 0 0 4px; font-size: 25px; letter-spacing: -0.02em; }
+    header p { margin: 0; color: #d8e6ef; font-size: 13px; }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 5px 18px rgba(24, 50, 74, 0.055);
+    }
+    .controls {
+      position: sticky;
+      top: 16px;
+      padding: 16px;
+    }
+    .control-section {
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      margin: 0 0 14px;
+      padding: 0 0 14px;
+    }
+    .control-section:last-child { border-bottom: 0; margin-bottom: 0; }
+    .control-section legend {
+      width: 100%;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--navy);
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      margin: 9px 0 5px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    input, select {
+      width: 100%;
+      height: 40px;
+      border: 1px solid #c7d3dc;
+      border-radius: 7px;
+      background: white;
+      color: var(--text);
+      padding: 8px 10px;
+      font: inherit;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    input:focus, select:focus {
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(49, 119, 168, 0.13);
+      border-color: var(--blue);
+    }
+    .unit-row {
+      display: grid;
+      grid-template-columns: 1fr 66px;
+      gap: 8px;
+      align-items: center;
+    }
+    .unit-row span { color: var(--muted); font-size: 13px; }
+    .radio-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .radio-row label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 9px 6px;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+    .radio-row label:has(input:checked) {
+      background: #edf5fa;
+      border-color: #91b3c9;
+      color: var(--blue-dark);
+    }
+    .radio-row input { width: auto; height: auto; accent-color: var(--blue); }
+    #warning {
+      display: none;
+      margin: 12px 0 0;
+      border-left: 4px solid var(--amber);
+      background: #fff8e8;
+      color: #704d11;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 13px;
+    }
+    #warning.stale { display: block; }
+    .results { display: grid; gap: 18px; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      overflow: hidden;
+    }
+    .metric {
+      min-height: 96px;
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fbfdfe);
+    }
+    .metric:last-child { border-right: 0; }
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .metric-value {
+      margin-top: 10px;
+      font-size: 21px;
+      font-weight: 750;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+    }
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(24, 50, 74, 0.025);
+    }
+    .badge {
+      min-width: 68px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      text-align: center;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .pass { background: var(--green); }
+    .fail { background: var(--red); }
+    .chart-card { padding: 14px 14px 10px; }
+    .chart-card h2 {
+      margin: 0 4px 8px;
+      color: var(--navy);
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+    svg { display: block; width: 100%; height: auto; }
+    .chart-grid { stroke: #edf2f5; stroke-width: 1; }
+    .chart-axis { stroke: #758695; stroke-width: 1.2; }
+    .chart-line { fill: none; stroke: var(--blue); stroke-width: 2.75; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-fill { fill: rgba(49, 119, 168, 0.09); }
+    .beam-line { stroke: #33495b; stroke-width: 9; stroke-linecap: round; }
+    .support { fill: #33495b; }
+    .load-arrow { stroke: var(--red); stroke-width: 3; marker-end: url(#arrowhead); }
+    .chart-label { fill: var(--text); font-size: 11px; }
+    .chart-muted { fill: var(--muted); font-size: 10px; }
+    .stale-banner {
+      display: none;
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .stale-banner.visible { display: inline; }
+    .disclaimer {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    @media (max-width: 760px) {
+      header { padding: 17px 16px 19px; }
+      header h1 { font-size: 22px; }
+      main { padding: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      .controls { position: static; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .status-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Beam Designer</h1>
+    <p>Shear, moment, deflection, and preliminary member checks</p>
+  </header>
+  <main>
+    <div class="layout">
+      <aside class="card controls">
+        <fieldset class="control-section">
+          <legend>Beam</legend>
+          <label for="support">Support condition</label>
+          <select id="support">
+            <option value="simple">Simply supported</option>
+            <option value="cantilever">Cantilever</option>
+          </select>
+          <label for="span">Span</label>
+          <div class="unit-row">
+            <input id="span" type="number" min="0.1" step="0.1" value="20">
+            <span>ft</span>
+          </div>
+        </fieldset>
+
+        <fieldset class="control-section">
+          <legend>Load</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="loadType" value="point"> Point</label>
+            <label><input type="radio" name="loadType" value="uniform" checked> Uniform</label>
+          </div>
+          <div id="pointFields" hidden>
+            <label for="pointLoad">Point load</label>
+            <div class="unit-row">
+              <input id="pointLoad" type="number" step="0.1" value="10">
+              <span>kip</span>
+            </div>
+            <label for="loadPosition">Position from left</label>
+            <div class="unit-row">
+              <input id="loadPosition" type="number" min="0" step="0.1" value="10">
+              <span>ft</span>
+            </div>
+          </div>
+          <div id="uniformFields">
+            <label for="uniformLoad">Uniform load</label>
+            <div class="unit-row">
+              <input id="uniformLoad" type="number" step="0.1" value="1">
+              <span>kip/ft</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="control-section">
+          <legend>Member</legend>
+          <label for="memberType">Member type</label>
+          <select id="memberType">
+            <option value="steel">Steel W-shape</option>
+            <option value="lumber">Lumber</option>
+          </select>
+          <div id="steelFields">
+            <label for="steelShape">W-shape</label>
+            <select id="steelShape"></select>
+          </div>
+          <div id="lumberFields" hidden>
+            <label for="species">Species</label>
+            <select id="species"></select>
+            <label for="grade">Grade</label>
+            <select id="grade"></select>
+            <label for="lumberSize">Size</label>
+            <select id="lumberSize"></select>
+          </div>
+        </fieldset>
+        <div id="warning" role="status"></div>
+      </aside>
+
+      <section class="results" aria-live="polite">
+        <div>
+          <div class="card summary">
+            <div class="metric">
+              <div class="metric-label">Reaction</div>
+              <div class="metric-value" id="reactionValue">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Maximum moment</div>
+              <div class="metric-value" id="momentValue">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Bending stress</div>
+              <div class="metric-value" id="stressValue">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Checked deflection</div>
+              <div class="metric-value" id="deflectionValue">—</div>
+            </div>
+          </div>
+          <div class="status-row">
+            <div class="status">
+              <div>
+                <strong>Bending</strong>
+                <span class="stale-banner" id="bendingStale">Last valid</span>
+              </div>
+              <span class="badge" id="bendingStatus">—</span>
+            </div>
+            <div class="status">
+              <div>
+                <strong>Deflection</strong>
+                <span class="stale-banner" id="deflectionStale">Last valid</span>
+              </div>
+              <span class="badge" id="deflectionStatus">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <h2>Beam and load</h2>
+          <svg id="beamSvg" viewBox="0 0 760 150" role="img" aria-label="Beam with applied load"></svg>
+        </div>
+        <div class="card chart-card">
+          <h2>Shear diagram</h2>
+          <svg id="shearSvg" viewBox="0 0 760 190" role="img" aria-label="Shear diagram"></svg>
+        </div>
+        <div class="card chart-card">
+          <h2>Moment diagram</h2>
+          <svg id="momentSvg" viewBox="0 0 760 190" role="img" aria-label="Moment diagram"></svg>
+        </div>
+        <div class="card chart-card">
+          <h2>Deflection diagram</h2>
+          <svg id="deflectionSvg" viewBox="0 0 760 190" role="img" aria-label="Deflection diagram"></svg>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+
+    const steelShapes = [
+      { name: "W12×26", I: 204, S: 33.4, E: 29000, fb: 24 },
+      { name: "W10×30", I: 170, S: 32.4, E: 29000, fb: 24 },
+      { name: "W10×22", I: 118, S: 23.2, E: 29000, fb: 24 },
+      { name: "W8×31", I: 110, S: 27.5, E: 29000, fb: 24 },
+      { name: "W8×24", I: 82.8, S: 20.9, E: 29000, fb: 24 },
+      { name: "W8×18", I: 61.9, S: 15.2, E: 29000, fb: 24 },
+      { name: "W6×25", I: 53.4, S: 17.1, E: 29000, fb: 24 },
+      { name: "W6×20", I: 41.4, S: 13.4, E: 29000, fb: 24 },
+      { name: "W6×15", I: 29.1, S: 9.72, E: 29000, fb: 24 },
+      { name: "W4×13", I: 11.3, S: 5.46, E: 29000, fb: 24 }
+    ];
+
+    const lumber = {
+      species: {
+        "Douglas Fir-Larch": {
+          "Select Structural": { fb: 1.60, E: 1700 },
+          "No. 1": { fb: 1.40, E: 1600 },
+          "No. 2": { fb: 1.15, E: 1500 }
+        },
+        "Southern Pine": {
+          "Select Structural": { fb: 1.75, E: 1600 },
+          "No. 1": { fb: 1.50, E: 1500 },
+          "No. 2": { fb: 1.25, E: 1400 }
+        }
+      },
+      sizes: [
+        { name: "2×4", b: 1.5, d: 3.5 },
+        { name: "2×6", b: 1.5, d: 5.5 },
+        { name: "2×8", b: 1.5, d: 7.25 },
+        { name: "2×10", b: 1.5, d: 9.25 },
+        { name: "2×12", b: 1.5, d: 11.25 },
+        { name: "4×4", b: 3.5, d: 3.5 },
+        { name: "4×6", b: 3.5, d: 5.5 },
+        { name: "4×8", b: 3.5, d: 7.25 }
+      ]
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function populateSelect(select, values) {
+      select.innerHTML = "";
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = typeof value === "string" ? value : value.name;
+        option.textContent = typeof value === "string" ? value : value.name;
+        select.appendChild(option);
+      });
+    }
+
+    populateSelect($("steelShape"), steelShapes);
+    populateSelect($("species"), Object.keys(lumber.species));
+
+    function refreshGradesAndLumber() {
+      const species = $("species").value;
+      populateSelect($("grade"), Object.keys(lumber.species[species]));
+      populateSelect($("lumberSize"), lumber.sizes);
+    }
+    refreshGradesAndLumber();
+
+    function inputNumber(id) {
+      const value = Number($(id).value);
+      return Number.isFinite(value) ? value : NaN;
+    }
+
+    function cumulativeTrapezoid(values, x) {
+      const result = new Array(values.length).fill(0);
+      for (let i = 1; i < values.length; i++) {
+        const dx = x[i] - x[i - 1];
+        result[i] = result[i - 1] + 0.5 * (values[i] + values[i - 1]) * dx;
+      }
+      return result;
+    }
+
+    function getMember() {
+      if ($("memberType").value === "steel") {
+        return steelShapes.find(shape => shape.name === $("steelShape").value);
+      }
+      const size = lumber.sizes.find(item => item.name === $("lumberSize").value);
+      const properties = lumber.species[$("species").value][$("grade").value];
+      return {
+        name: size.name,
+        I: size.b * size.d ** 3 / 12,
+        S: size.b * size.d ** 2 / 6,
+        E: properties.E * 1000,
+        fb: properties.fb
+      };
+    }
+
+    function validate() {
+      const span = inputNumber("span");
+      const support = $("support").value;
+      const loadType = document.querySelector("input[name='loadType']:checked").value;
+      const point = inputNumber("pointLoad");
+      const position = inputNumber("loadPosition");
+      const uniform = inputNumber("uniformLoad");
+      if (!(span > 0)) return "Enter a span greater than 0 ft.";
+      if (loadType === "point") {
+        if (!(point > 0)) return "Enter a point load greater than 0 kip.";
+        if (!(position >= 0 && position <= span)) return "Point-load position must be within the beam span.";
+      } else if (!(uniform > 0)) {
+        return "Enter a uniform load greater than 0 kip/ft.";
+      }
+      if (!getMember()) return "Select a valid member.";
+      return "";
+    }
+
+    function calculate() {
+      const spanFt = inputNumber("span");
+      const support = $("support").value;
+      const loadType = document.querySelector("input[name='loadType']:checked").value;
+      const point = inputNumber("pointLoad");
+      const position = inputNumber("loadPosition");
+      const uniform = inputNumber("uniformLoad");
+      const member = getMember();
+
+      const n = 240;
+      const x = [];
+      const xFt = [];
+      for (let i = 0; i <= n; i++) {
+        xFt.push(spanFt * i / n);
+        x.push(spanFt * 12 * i / n);
+      }
+
+      const shear = [];
+      const moment = [];
+      let reactions;
+      let maxMomentLocation = 0;
+      let maxMoment = 0;
+
+      if (support === "simple") {
+        if (loadType === "point") {
+          const ra = point * (spanFt - position) / spanFt;
+          const rb = point * position / spanFt;
+          reactions = [{ label: "R_A", value: ra }, { label: "R_B", value: rb }];
+          xFt.forEach((xf, i) => {
+            const v = xf <= position ? ra : ra - point;
+            shear.push(v);
+            const m = xf <= position ? ra * xf : ra * xf - point * (xf - position);
+            moment.push(m);
+            if (Math.abs(m) > Math.abs(maxMoment)) {
+              maxMoment = m;
+              maxMomentLocation = xf;
+            }
+          });
+        } else {
+          const r = uniform * spanFt / 2;
+          reactions = [{ label: "R_A", value: r }, { label: "R_B", value: r }];
+          xFt.forEach((xf, i) => {
+            const v = r - uniform * xf;
+            const m = r * xf - uniform * xf * xf / 2;
+            shear.push(v);
+            moment.push(m);
+            if (Math.abs(m) > Math.abs(maxMoment)) {
+              maxMoment = m;
+              maxMomentLocation = xf;
+            }
+          });
+        }
+      } else {
+        reactions = [];
+        if (loadType === "point") {
+          reactions.push({ label: "R_fixed", value: point });
+          xFt.forEach((xf, i) => {
+            const m = -point * Math.max(position - xf, 0);
+            shear.push(xf >= position ? -point : 0);
+            moment.push(m);
+            if (Math.abs(m) > Math.abs(maxMoment)) {
+              maxMoment = m;
+              maxMomentLocation = xf;
+            }
+          });
+        } else {
+          reactions.push({ label: "R_fixed", value: uniform * spanFt });
+          xFt.forEach((xf, i) => {
+            const v = -uniform * (spanFt - xf);
+            const m = -uniform * (spanFt - xf) ** 2 / 2;
+            shear.push(v);
+            moment.push(m);
+            if (Math.abs(m) > Math.abs(maxMoment)) {
+              maxMoment = m;
+              maxMomentLocation = xf;
+            }
+          });
+        }
+      }
+
+      const curvature = moment.map(m => -(m * 12) / (member.E * member.I));
+      const slope = cumulativeTrapezoid(curvature, x);
+      let deflection = cumulativeTrapezoid(slope, x);
+
+      if (support === "simple") {
+        const endCorrection = deflection[deflection.length - 1] / x[x.length - 1];
+        deflection = deflection.map((y, i) => y - endCorrection * x[i]);
+      }
+
+      const checkedIndex = support === "simple" ? n / 2 : deflection.length - 1;
+      const checkedDeflection = deflection[checkedIndex];
+      const stress = Math.abs(maxMoment) / member.S;
+      const limit = spanFt * 12 / 360;
+
+      let displayCheckedLocation = checkedIndex / n * spanFt;
+      if (support === "simple") displayCheckedLocation = spanFt / 2;
+
+      const values = {
+        xFt, x, shear, moment, deflection, reactions, member, stress,
+        maxMoment, maxMomentLocation, checkedDeflection, limit,
+        checkedLocation: displayCheckedLocation
+      };
+
+      $("reactionValue").textContent = reactions.map(r => `${r.label} ${r.value.toFixed(2)} kip`).join("  ·  ");
+      $("momentValue").textContent = `${Math.abs(maxMoment).toFixed(2)} kip-ft`;
+      $("stressValue").textContent = `${stress.toFixed(2)} ksi`;
+      $("deflectionValue").textContent = `${Math.abs(checkedDeflection).toFixed(3)} in`;
+
+      const bendingPass = stress <= member.fb;
+      const deflectionPass = Math.abs(checkedDeflection) <= limit;
+      setStatus("bendingStatus", bendingPass);
+      setStatus("deflectionStatus", deflectionPass);
+
+      return values;
+    }
+
+    function setStatus(id, pass) {
+      const element = $(id);
+      element.textContent = pass ? "PASS" : "FAIL";
+      element.className = `badge ${pass ? "pass" : "fail"}`;
+    }
+
+    function svgElement(tag, attributes = {}, text) {
+      const element = document.createElementNS(NS, tag);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+
+    function clearSvg(svg) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    function drawBeam(values) {
+      const svg = $("beamSvg");
+      clearSvg(svg);
+      const support = $("support").value;
+      const left = 80, right = 680, y = 76;
+      const defs = svgElement("defs");
+      const marker = svgElement("marker", { id: "arrowhead", markerWidth: "8", markerHeight: "6", refX: "7", refY: "3", orient: "auto" });
+      marker.appendChild(svgElement("path", { d: "M0,0 L8,3 L0,6 Z", fill: "#b34444" }));
+      defs.appendChild(marker);
+      svg.appendChild(defs);
+      svg.appendChild(svgElement("line", { x1: left, y1: y, x2: right, y2: y, class: "beam-line" }));
+
+      if (support === "simple") {
+        svg.appendChild(svgElement("polygon", { points: `${left},${y + 5} ${left - 18},${y + 32} ${left + 18},${y + 32}`, class: "support" }));
+        svg.appendChild(svgElement("polygon", { points: `${right},${y + 5} ${right - 18},${y + 32} ${right + 18},${y + 32}`, class: "support" }));
+        svg.appendChild(svgElement("circle", { cx: left, cy: y + 5, r: 5, fill: "#f4f7fa", stroke: "#33495b", "stroke-width": 2 }));
+        svg.appendChild(svgElement("circle", { cx: right, cy: y + 5, r: 5, fill: "#f4f7fa", stroke: "#33495b", "stroke-width": 2 }));
+      } else {
+        svg.appendChild(svgElement("rect", { x: left - 14, y: y - 38, width: 28, height: 76, fill: "#33495b" }));
+        for (let i = -2; i <= 2; i++) {
+          svg.appendChild(svgElement("line", { x1: left - 12, y1: y - 35 + i * 14, x2: left - 28, y2: y - 21 + i * 14, stroke: "#33495b", "stroke-width": 3 }));
+        }
+      }
+
+      const loadType = document.querySelector("input[name='loadType']:checked").value;
+      if (loadType === "point") {
+        const position = inputNumber("loadPosition");
+        const span = inputNumber("span");
+        const lx = left + (position / span) * (right - left);
+        svg.appendChild(svgElement("line", { x1: lx, y1: y - 58, x2: lx, y2: y - 13, class: "load-arrow" }));
+        svg.appendChild(svgElement("text", { x: lx, y: y - 64, "text-anchor": "middle", class: "chart-label" }, `${inputNumber("pointLoad").toFixed(1)} kip`));
+      } else {
+        for (let i = 0; i <= 10; i++) {
+          const lx = left + i * (right - left) / 10;
+          svg.appendChild(svgElement("line", { x1: lx, y1: y - 42, x2: lx, y2: y - 13, class: "load-arrow" }));
+        }
+        svg.appendChild(svgElement("text", { x: (left + right) / 2, y: y - 48, "text-anchor": "middle", class: "chart-label" }, `${inputNumber("uniformLoad").toFixed(2)} kip/ft`));
+      }
+      svg.appendChild(svgElement("text", { x: left, y: 130, "text-anchor": "middle", class: "chart-muted" }, "0 ft"));
+      svg.appendChild(svgElement("text", { x: right, y: 130, "text-anchor": "middle", class: "chart-muted" }, `${inputNumber("span").toFixed(1)} ft`));
+    }
+
+    function drawChart(svgId, xValues, yValues, options) {
+      const svg = $(svgId);
+      clearSvg(svg);
+      const width = 760, height = 190;
+      const left = 58, right = 728, top = 22, bottom = 158;
+      let yMin = options.min ?? Math.min(...yValues);
+      let yMax = options.max ?? Math.max(...yValues);
+      if (yMin === yMax) {
+        yMin -= 1;
+        yMax += 1;
+      }
+      const padding = (yMax - yMin) * 0.12;
+      yMin -= padding;
+      yMax += padding;
+      if (options.zeroCentered) {
+        const abs = Math.max(Math.abs(yMin), Math.abs(yMax));
+        yMin = -abs;
+        yMax = abs;
+      }
+
+      const sx = value => left + value * (right - left);
+      const sy = value => bottom - (value - yMin) / (yMax - yMin) * (bottom - top);
+
+      for (let i = 0; i <= 4; i++) {
+        const gy = top + i * (bottom - top) / 4;
+        svg.appendChild(svgElement("line", { x1: left, y1: gy, x2: right, y2: gy, class: "chart-grid" }));
+      }
+      const xSpan = Math.max(...xValues);
+      for (let i = 0; i <= 4; i++) {
+        const gx = left + i * (right - left) / 4;
+        svg.appendChild(svgElement("line", { x1: gx, y1: top, x2: gx, y2: bottom, class: "chart-grid" }));
+        svg.appendChild(svgElement("text", { x: gx, y: 177, "text-anchor": "middle", class: "chart-muted" }, `${(xSpan * i / 4).toFixed(1)} ft`));
+      }
+
+      const zeroY = yMin <= 0 && yMax >= 0 ? sy(0) : bottom;
+      svg.appendChild(svgElement("line", { x1: left, y1: zeroY, x2: right, y2: zeroY, class: "chart-axis" }));
+
+      const points = yValues.map((y, i) => `${sx(xValues[i] / xSpan)},${sy(y)}`).join(" ");
+      if (options.fill) {
+        svg.appendChild(svgElement("polygon", { points: `${left},${zeroY} ${points} ${right},${zeroY}`, class: "chart-fill" }));
+      }
+      svg.appendChild(svgElement("polyline", { points, class: "chart-line" }));
+
+      const maxIndex = yValues.reduce((best, y, i, arr) => y > arr[best] ? i : best, 0);
+      const minIndex = yValues.reduce((best, y, i, arr) => y < arr[best] ? i : best, 0);
+      const maxX = sx(xValues[maxIndex] / xSpan);
+      const maxY = sy(yValues[maxIndex]);
+      const minX = sx(xValues[minIndex] / xSpan);
+      const minY = sy(yValues[minIndex]);
+      svg.appendChild(svgElement("circle", { cx: maxX, cy: maxY, r: 3.5, fill: "#2878bd" }));
+      svg.appendChild(svgElement("circle", { cx: minX, cy: minY, r: 3.5, fill: "#2878bd" }));
+
+      const maxText = options.format(yValues[maxIndex]);
+      const minText = options.format(yValues[minIndex]);
+      svg.appendChild(svgElement("text", {
+        x: Math.min(Math.max(maxX, left + 5), right - 85),
+        y: Math.max(maxY - 8, top + 12),
+        class: "chart-label"
+      }, `Max ${maxText}`));
+      svg.appendChild(svgElement("text", {
+        x: Math.min(Math.max(minX, left + 5), right - 85),
+        y: Math.min(minY + 16, bottom - 4),
+        class: "chart-label"
+      }, `Min ${minText}`));
+    }
+
+    function render() {
+      const error = validate();
+      const warning = $("warning");
+      const staleIds = ["bendingStale", "deflectionStale"];
+      if (error) {
+        warning.textContent = error;
+        warning.classList.add("stale");
+        staleIds.forEach(id => $(id).classList.add("visible"));
+        return;
+      }
+      warning.classList.remove("stale");
+      staleIds.forEach(id => $(id).classList.remove("visible"));
+      const values = calculate();
+      drawBeam(values);
+      drawChart("shearSvg", values.xFt, values.shear, {
+        zeroCentered: true,
+        fill: true,
+        format: value => `${value.toFixed(2)} kip`
+      });
+      drawChart("momentSvg", values.xFt, values.moment, {
+        zeroCentered: true,
+        fill: true,
+        format: value => `${value.toFixed(2)} kip-ft`
+      });
+      drawChart("deflectionSvg", values.xFt, values.deflection, {
+        zeroCentered: true,
+        fill: true,
+        format: value => `${value.toFixed(3)} in`
+      });
+    }
+
+    document.querySelectorAll("input, select").forEach(element => {
+      element.addEventListener("input", render);
+      element.addEventListener("change", render);
+    });
+
+    $("species").addEventListener("change", () => {
+      refreshGradesAndLumber();
+      render();
+    });
+
+    document.querySelectorAll("input[name='loadType']").forEach(element => {
+      element.addEventListener("change", () => {
+        const point = element.value === "point";
+        $("pointFields").hidden = !point;
+        $("uniformFields").hidden = point;
+        render();
+      });
+    });
+
+    $("memberType").addEventListener("change", () => {
+      const steel = $("memberType").value === "steel";
+      $("steelFields").hidden = !steel;
+      $("lumberFields").hidden = steel;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
